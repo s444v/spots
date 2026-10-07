@@ -1,6 +1,8 @@
 package server
 
 import (
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -8,13 +10,17 @@ import (
 	"testing/fstest"
 
 	"github.com/s444v/spots/internal/config"
+	"github.com/s444v/spots/internal/logger"
 )
 
 func TestHandler(t *testing.T) {
 	webFS := fstest.MapFS{
 		"index.html": {Data: []byte("<h1>spots</h1>")},
 	}
-	h := NewHandler(webFS)
+	cfg := config.Config{Port: ":9999"}
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	h := New(cfg, webFS, log).Handler
 
 	tests := []struct {
 		name     string
@@ -23,7 +29,7 @@ func TestHandler(t *testing.T) {
 		wantCode int
 		wantBody string
 	}{
-		{"healthz", http.MethodGet, "/healthz", http.StatusOK, ""},
+		{"healthz", http.MethodGet, "/healthz", http.StatusOK, `"status":"ok"`},
 		{"index", http.MethodGet, "/", http.StatusOK, "<h1>spots</h1>"},
 		{"missing file", http.MethodGet, "/nope.js", http.StatusNotFound, ""},
 		{"post not allowed", http.MethodPost, "/healthz", http.StatusMethodNotAllowed, ""},
@@ -47,8 +53,9 @@ func TestHandler(t *testing.T) {
 }
 
 func TestNewServer(t *testing.T) {
-	cfg := config.Config{ADDR: ":9999"} // без t.Setenv
-	srv := NewServer(cfg, fstest.MapFS{})
+	cfg := config.Config{Port: ":9999"} // без t.Setenv
+	log := logger.Init()
+	srv := New(cfg, fstest.MapFS{}, log)
 
 	if srv.Addr != ":9999" {
 		t.Errorf("Addr = %q, want :9999", srv.Addr)

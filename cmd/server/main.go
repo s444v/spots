@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/s444v/spots/internal/config"
 	"github.com/s444v/spots/internal/logger"
@@ -19,42 +18,38 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	logger.Init()
+	log := logger.Init()
 
 	webFS, err := web.Static()
 	if err != nil {
-		logger.Log.Error("server stopped", "app", "spots", "error", err)
+		log.Error("FS error", "error", err)
 		os.Exit(1)
 	}
 
 	cfg, err := config.Load()
 	if err != nil {
-		logger.Log.Error("server stopped", "app", "spots", "error", err)
+		log.Error("CFG error", "error", err)
 		os.Exit(1)
 	}
 
-	s := server.NewServer(cfg, webFS)
-	if err != nil {
-		logger.Log.Error("server stopped", "app", "spots", "error", err)
-		os.Exit(1)
-	}
+	s := server.New(cfg, webFS, log)
 
-	logger.Log.Info("server starting", "app", "spots")
+	log.Info("server starting")
 
 	go func() {
 		if err := s.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Log.Info("server error", "app", "spots", "error", err)
+			log.Info("server starting error", "error", err)
 		}
 	}()
 
 	<-ctx.Done()
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
 	defer cancel()
 
 	if err := s.Shutdown(shutdownCtx); err != nil {
-		logger.Log.Info("forced shutdown", "app", "spots", "error", err)
+		log.Info("forced shutdown", "error", err)
 	}
-	logger.Log.Info("server shutdown", "app", "spots")
+	log.Info("server shutdown")
 
 }

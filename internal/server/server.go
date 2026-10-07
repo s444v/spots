@@ -3,29 +3,32 @@ package server
 import (
 	"encoding/json"
 	"io/fs"
+	"log/slog"
 	"net/http"
-	"runtime/debug"
 	"time"
 
 	"github.com/s444v/spots/internal/config"
-	"github.com/s444v/spots/internal/logger"
 )
 
-func NewServer(cfg config.Config, webFS fs.FS) *http.Server {
+type Server struct {
+	log   *slog.Logger
+	webFS fs.FS
+}
+
+func New(cfg config.Config, webFS fs.FS, log *slog.Logger) *http.Server {
+	s := &Server{log: log, webFS: webFS}
+
 	return &http.Server{
-		Handler:      NewHandler(webFS),
-		Addr:         cfg.ADDR,
-		ReadTimeout:  cfg.SHUTDOWN_TIMEOUT,
-		WriteTimeout: cfg.SHUTDOWN_TIMEOUT,
-		IdleTimeout:  cfg.SHUTDOWN_TIMEOUT,
+		Addr:              cfg.Port,
+		Handler:           s.Logging(s.Recover(s.routes())),
+		ReadHeaderTimeout: 5 * time.Second,
 	}
 }
 
-func NewHandler(webFS fs.FS) http.Handler {
+func (s *Server) routes() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /healthz", handleHealthz)
-
-	mux.Handle("GET /", http.FileServerFS(webFS))
+	mux.HandleFunc("GET /healthz", s.handleHealthz)
+	mux.Handle("GET /", http.FileServerFS(s.webFS))
 	return mux
 }
 
@@ -33,15 +36,21 @@ type healthzResp struct {
 	Status string `json:"status"`
 }
 
-func handleHealthz(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleHealthz(w http.ResponseWriter, r *http.Request) {
 	h := healthzResp{Status: "ok"}
-	writeJSON(w, http.StatusOK, h)
+	s.writeJSON(w, http.StatusOK, h)
 }
 
-func writeJSON(w http.ResponseWriter, status int, v any) {
+func (s *Server) writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(v)
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		s.log.Error("failed to encode JSON response",
+			slog.Int("status", status),
+			slog.Any("error", err),
+		)
+	}
+
 }
 
 type statusRecorder struct {
@@ -54,20 +63,20 @@ func (s *statusRecorder) WriteHeader(code int) {
 	s.ResponseWriter.WriteHeader(code)
 }
 
-func Logging(next http.Handler) http.Handler {
+func (s *Server) Logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
-		next.ServeHTTP(w, r)
-		logger.Log.Info("logHandlers", "Method", r.Method, "Path", r.URL.Path, "Status", rec.status, "Duration", time.Since(start))
+		next.ServeHTTP(rec, r)
+		s.log.Info("handler", "method", r.Method, "path", r.URL.Path, "status", rec.status, "duration", time.Since(start))
 	})
 }
 
-func Recover(next http.Handler) http.Handler {
+func (s *Server) Recover(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				logger.Log.Error("panic", "error", err, "debug", debug.Stack())
+				s.log.Error("panic", "error", err)
 				http.Error(w, "internal server error", http.StatusInternalServerError)
 			}
 		}()
