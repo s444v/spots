@@ -17,7 +17,7 @@ func TestLoadAddr(t *testing.T) {
 		{name: "default", unset: true, wantAddr: ":8080"},
 		{name: "custom", addr: ":9090", wantAddr: ":9090"},
 		{name: "invalid", addr: "abc", wantErr: true},
-		{name: "range", addr: "70000", wantErr: true},
+		{name: "range", addr: ":70000", wantErr: true},
 	}
 
 	for _, tt := range tests {

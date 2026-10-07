@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -19,9 +20,16 @@ func Load() (Config, error) {
 	if !ok {
 		val = ":8080"
 	}
-	_, _, err := net.SplitHostPort(val)
+	_, p, err := net.SplitHostPort(val)
 	if err != nil {
 		return config, fmt.Errorf("invalid ADDR format: %w", err)
+	}
+	port, err := strconv.Atoi(p)
+	if err != nil {
+		return config, fmt.Errorf("failed to conv port: %w", err)
+	}
+	if port < 1 || port > 65535 {
+		return config, fmt.Errorf("port out of range: %w", err)
 	}
 	config.Addr = val
 	val, ok = os.LookupEnv("SHUTDOWN_TIMEOUT")
