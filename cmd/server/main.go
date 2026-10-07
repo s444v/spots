@@ -24,13 +24,13 @@ func main() {
 	webFS, err := web.Static()
 	if err != nil {
 		log.Error("cant get static files", "error", err)
-		return
+		os.Exit(1)
 	}
 
 	cfg, err := config.Load()
 	if err != nil {
 		log.Error("cant load config for server", "error", err)
-		return
+		os.Exit(1)
 	}
 
 	s := server.New(cfg, webFS, log)
@@ -38,7 +38,7 @@ func main() {
 	ln, err := net.Listen("tcp", cfg.Addr)
 	if err != nil {
 		log.Error("listen failed", "addr", cfg.Addr, "error", err)
-		return
+		os.Exit(1)
 	}
 	log.Info("server listening", "addr", ln.Addr().String())
 
