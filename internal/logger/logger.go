@@ -8,7 +8,7 @@ import (
 func Init() *slog.Logger {
 	handler := slog.NewJSONHandler(os.Stdout, nil)
 	logger := slog.New(handler).With(
-		"version", "1.2.0",
+		"version", "0.1",
 		"env", "production",
 		"app", "spots",
 	)

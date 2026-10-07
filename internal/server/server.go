@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"runtime/debug"
 	"time"
 
 	"github.com/s444v/spots/internal/config"
@@ -76,7 +77,7 @@ func (s *Server) Recover(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				s.log.Error("panic", "error", err)
+				s.log.Error("panic", "error", err, slog.String("debug", string(debug.Stack())))
 				http.Error(w, "internal server error", http.StatusInternalServerError)
 			}
 		}()

@@ -23,34 +23,41 @@ func main() {
 	webFS, err := web.Static()
 	if err != nil {
 		log.Error("FS error", "error", err)
-		os.Exit(1)
+		return
 	}
 
 	cfg, err := config.Load()
 	if err != nil {
 		log.Error("CFG error", "error", err)
-		os.Exit(1)
+		return
 	}
 
 	s := server.New(cfg, webFS, log)
 
 	log.Info("server starting")
 
+	errChan := make(chan error, 1)
+
 	go func() {
 		if err := s.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Info("server starting error", "error", err)
-			os.Exit(1)
+			errChan <- err
 		}
 	}()
 
-	<-ctx.Done()
+	select {
+	case <-ctx.Done():
+		log.Info("shutting down server gracefully...")
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
-	defer cancel()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
+		defer cancel()
 
-	if err := s.Shutdown(shutdownCtx); err != nil {
-		log.Info("forced shutdown", "error", err)
+		if err := s.Shutdown(shutdownCtx); err != nil {
+			log.Error("forced shutdown", "error", err)
+		}
+		log.Info("server shutdown complete")
+
+	case err := <-errChan:
+		log.Error("server starting error", "error", err)
 	}
-	log.Info("server shutdown")
 
 }
