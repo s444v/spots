@@ -23,13 +23,13 @@ func main() {
 
 	webFS, err := web.Static()
 	if err != nil {
-		log.Error("FS error", "error", err)
+		log.Error("cant get static files", "error", err)
 		return
 	}
 
 	cfg, err := config.Load()
 	if err != nil {
-		log.Error("CFG error", "error", err)
+		log.Error("cant load config for server", "error", err)
 		return
 	}
 
