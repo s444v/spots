@@ -39,6 +39,7 @@ func main() {
 	go func() {
 		if err := s.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Info("server starting error", "error", err)
+			os.Exit(1)
 		}
 	}()
 
