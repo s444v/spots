@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -34,7 +35,12 @@ func main() {
 
 	s := server.New(cfg, webFS, log)
 
-	log.Info("server starting")
+	ln, err := net.Listen("tcp", cfg.Addr)
+	if err != nil {
+		log.Error("listen failed", "addr", cfg.Addr, "err", err)
+		return
+	}
+	log.Info("server listening", "addr", ln.Addr().String())
 
 	errChan := make(chan error, 1)
 
