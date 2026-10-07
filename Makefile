@@ -16,4 +16,3 @@ vet:
 
 test:
 	go test -race ./...
-	
