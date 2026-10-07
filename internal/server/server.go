@@ -70,7 +70,7 @@ func (s *Server) Logging(next http.Handler) http.Handler {
 		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(rec, r)
 		duration := time.Since(start)
-		s.log.Info("http request", "method", r.Method, "path", r.URL.Path, "status", rec.status, "duration millis", duration.Milliseconds(), "duration micros", duration.Microseconds())
+		s.log.Info("http request", "method", r.Method, "path", r.URL.Path, "status", rec.status, "duration_micros", duration.Microseconds())
 	})
 }
 
