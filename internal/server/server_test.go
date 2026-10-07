@@ -11,7 +11,6 @@ import (
 	"testing/fstest"
 
 	"github.com/s444v/spots/internal/config"
-	"github.com/s444v/spots/internal/logger"
 )
 
 func TestHandler(t *testing.T) {
@@ -87,7 +86,7 @@ func TestHandler(t *testing.T) {
 
 func TestNewServer(t *testing.T) {
 	cfg := config.Config{Port: ":9999"} // без t.Setenv
-	log := logger.Init()
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	srv := New(cfg, fstest.MapFS{}, log)
 
 	if srv.Addr != ":9999" {
