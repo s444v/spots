@@ -37,7 +37,7 @@ func main() {
 
 	ln, err := net.Listen("tcp", cfg.Addr)
 	if err != nil {
-		log.Error("listen failed", "addr", cfg.Addr, "err", err)
+		log.Error("listen failed", "addr", cfg.Addr, "error", err)
 		return
 	}
 	log.Info("server listening", "addr", ln.Addr().String())
@@ -45,7 +45,7 @@ func main() {
 	errChan := make(chan error, 1)
 
 	go func() {
-		if err := s.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := s.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errChan <- err
 		}
 	}()
