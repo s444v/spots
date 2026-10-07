@@ -9,22 +9,22 @@ import (
 func TestLoadAddr(t *testing.T) {
 	tests := []struct {
 		name     string
-		port     string
+		addr     string
 		unset    bool
-		wantPort string
+		wantAddr string
 		wantErr  bool
 	}{
-		{name: "default", unset: true, wantPort: ":8080"},
-		{name: "custom", port: "9090", wantPort: ":9090"},
-		{name: "invalid", port: "abc", wantErr: true},
-		{name: "range", port: "70000", wantErr: true},
+		{name: "default", unset: true, wantAddr: ":8080"},
+		{name: "custom", addr: ":9090", wantAddr: ":9090"},
+		{name: "invalid", addr: "abc", wantErr: true},
+		{name: "range", addr: "70000", wantErr: true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv("PORT", tt.port)
+			t.Setenv("ADDR", tt.addr)
 			if tt.unset {
-				os.Unsetenv("PORT")
+				os.Unsetenv("ADDR")
 			}
 			cfg, err := Load()
 			if tt.wantErr {
@@ -36,8 +36,8 @@ func TestLoadAddr(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			if cfg.Port != tt.wantPort {
-				t.Errorf("Port = %s, want %s", cfg.Port, tt.wantPort)
+			if cfg.Addr != tt.wantAddr {
+				t.Errorf("Addr = %s, want %s", cfg.Addr, tt.wantAddr)
 			}
 		})
 	}

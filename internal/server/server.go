@@ -20,7 +20,7 @@ func New(cfg config.Config, webFS fs.FS, log *slog.Logger) *http.Server {
 	s := &Server{log: log, webFS: webFS}
 
 	return &http.Server{
-		Addr:              cfg.Port,
+		Addr:              cfg.Addr,
 		Handler:           s.Logging(s.Recover(s.routes())),
 		ReadHeaderTimeout: 5 * time.Second,
 	}

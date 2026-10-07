@@ -17,7 +17,7 @@ func TestHandler(t *testing.T) {
 	webFS := fstest.MapFS{
 		"index.html": {Data: []byte("<h1>spots</h1>")},
 	}
-	cfg := config.Config{Port: ":9999"}
+	cfg := config.Config{Addr: ":9999"}
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	h := New(cfg, webFS, log).Handler
@@ -85,7 +85,7 @@ func TestHandler(t *testing.T) {
 }
 
 func TestNewServer(t *testing.T) {
-	cfg := config.Config{Port: ":9999"} // без t.Setenv
+	cfg := config.Config{Addr: ":9999"} // без t.Setenv
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	srv := New(cfg, fstest.MapFS{}, log)
 

@@ -2,30 +2,28 @@ package config
 
 import (
 	"fmt"
+	"net"
 	"os"
-	"strconv"
 	"time"
 )
 
 type Config struct {
-	Port            string
+	Addr            string
 	ShutdownTimeout time.Duration
 }
 
 func Load() (Config, error) {
 	var config Config
-	val, ok := os.LookupEnv("PORT")
+
+	val, ok := os.LookupEnv("ADDR")
 	if !ok {
-		val = "8080"
+		val = ":8080"
 	}
-	port, err := strconv.Atoi(val)
+	_, _, err := net.SplitHostPort(val)
 	if err != nil {
-		return config, fmt.Errorf("invalid PORT %q: %w", val, err)
+		return config, fmt.Errorf("invalid ADDR format: %w", err)
 	}
-	if port < 1 || port > 65535 {
-		return config, fmt.Errorf("PORT %d out of range 1-65535", port)
-	}
-	config.Port = ":" + val
+	config.Addr = val
 	val, ok = os.LookupEnv("SHUTDOWN_TIMEOUT")
 	if !ok {
 		val = "10s"
