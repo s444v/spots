@@ -64,6 +64,7 @@ func main() {
 
 	case err := <-errChan:
 		log.Error("server starting error", "error", err)
+		os.Exit(1)
 	}
 
 }

@@ -29,7 +29,7 @@ func Load() (Config, error) {
 		return config, fmt.Errorf("failed to conv port: %w", err)
 	}
 	if port < 1 || port > 65535 {
-		return config, fmt.Errorf("port out of range: %w", err)
+		return config, fmt.Errorf("port out of range: %d", port)
 	}
 	config.Addr = val
 	val, ok = os.LookupEnv("SHUTDOWN_TIMEOUT")
