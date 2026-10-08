@@ -16,6 +16,15 @@ type Server struct {
 	webFS fs.FS
 }
 
+type statusRecorder struct {
+	http.ResponseWriter
+	status int
+}
+
+type healthzResp struct {
+	Status string `json:"status"`
+}
+
 func New(cfg config.Config, webFS fs.FS, log *slog.Logger) *http.Server {
 	s := &Server{log: log, webFS: webFS}
 
@@ -33,30 +42,9 @@ func (s *Server) routes() http.Handler {
 	return mux
 }
 
-type healthzResp struct {
-	Status string `json:"status"`
-}
-
 func (s *Server) handleHealthz(w http.ResponseWriter, r *http.Request) {
 	h := healthzResp{Status: "ok"}
 	s.writeJSON(w, http.StatusOK, h)
-}
-
-func (s *Server) writeJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	if err := json.NewEncoder(w).Encode(v); err != nil {
-		s.log.Error("failed to encode JSON response",
-			slog.Int("status", status),
-			slog.Any("error", err),
-		)
-	}
-
-}
-
-type statusRecorder struct {
-	http.ResponseWriter
-	status int
 }
 
 func (s *statusRecorder) WriteHeader(code int) {
@@ -84,4 +72,16 @@ func (s *Server) Recover(next http.Handler) http.Handler {
 		}()
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (s *Server) writeJSON(w http.ResponseWriter, status int, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		s.log.Error("failed to encode JSON response",
+			slog.Int("status", status),
+			slog.Any("error", err),
+		)
+	}
+
 }
